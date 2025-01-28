@@ -5,5 +5,5 @@
 
 namespace Resources
 {
-	const Assets::TextAsset LoadTextAsset(const std::string &);
+	const Assets::TextAsset* LoadTextAsset(const std::string &);
 }

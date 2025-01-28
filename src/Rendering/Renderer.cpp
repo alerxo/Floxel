@@ -13,13 +13,13 @@ SDL_GLContext glContext = nullptr;
 int screenWidth;
 int screenHeight;
 
-VertexArray* vertexArray;
-VertexBuffer* vertexBuffer;
-VertexBufferLayout* vertexBufferLayout;
-IndexBuffer* indexBuffer;
-Shader* shader;
+VertexArray* rectangleVertexArray;
+VertexBuffer* rectangleVertexBuffer;
+VertexBufferLayout* rectangleVertexBufferLayout;
+IndexBuffer* rectangleIndexBuffer;
+Shader* rectangleShader;
+Vector4 rectangleColor(0.0f, 0.5f, 1.0f, 1.0f);
 
-float red, green, blue;
 bool increaseRed, increaseGreen, increaseBlue;
 
 void Renderer::ClearGLError()
@@ -95,31 +95,27 @@ static void CreateGLData()
 	and lastly we create a index buffer to define how the triangles are to be draw.
 	*/
 
-	vertexArray = new VertexArray();
-	vertexBuffer = new VertexBuffer(positions, 4 * 2 * sizeof(float));
+	rectangleVertexArray = new VertexArray();
+	rectangleVertexBuffer = new VertexBuffer(positions, 4 * 2 * sizeof(float));
 
-	vertexBufferLayout = new VertexBufferLayout();
-	vertexBufferLayout->Push(GL_FLOAT, 2, GL_FALSE);
-	vertexArray->AddBuffer(*vertexBuffer, *vertexBufferLayout);
+	rectangleVertexBufferLayout = new VertexBufferLayout();
+	rectangleVertexBufferLayout->Push(GL_FLOAT, 2, GL_FALSE);
+	rectangleVertexArray->AddBuffer(*rectangleVertexBuffer, *rectangleVertexBufferLayout);
 
-	indexBuffer = new IndexBuffer(indices, 6);
-
-	red = 0.0f;
-	green = 0.5f;
-	blue = 1.0f;
+	rectangleIndexBuffer = new IndexBuffer(indices, 6);
 
 	/* Getting shader assets, creating shader, binding and setting color uniform */
-	Assets::TextAsset vertexShader = Resources::LoadTextAsset("shaders/BasicVertex.glsl");
-	Assets::TextAsset fragmentShader = Resources::LoadTextAsset("shaders/BasicFragment.glsl");
-	shader = new Shader(vertexShader, fragmentShader);
-	shader->Bind();
-	shader->SetUniformVector4("u_Color", Vector4(red, green, blue, 1.0f));
+	const Assets::TextAsset* vertexShader = Resources::LoadTextAsset("shaders/BasicVertex.glsl");
+	const Assets::TextAsset* fragmentShader = Resources::LoadTextAsset("shaders/BasicFragment.glsl");
+	rectangleShader = new Shader(vertexShader, fragmentShader);
+	rectangleShader->Bind();
+	rectangleShader->SetUniformVector4("u_Color", rectangleColor);
 
-	/* Unbinds vertex array object, vertex buffer, index buffer and shader */
-	vertexArray->Unbind();
-	vertexBuffer->Unbind();
-	indexBuffer->Unbind();
-	shader->Unbind();
+	/* Unbinds vertex array object, vertex buffer, index buffer and shader (only in debug) */
+	rectangleVertexArray->Unbind();
+	rectangleVertexBuffer->Unbind();
+	rectangleIndexBuffer->Unbind();
+	rectangleShader->Unbind();
 }
 
 void Renderer::Initialize()
@@ -131,11 +127,12 @@ void Renderer::Initialize()
 
 void Renderer::Destroy()
 {
-	delete(vertexBufferLayout);
-	delete(vertexArray);
-	delete(vertexBuffer);
-	delete(indexBuffer);
-	delete(shader);
+	delete(rectangleVertexBufferLayout);
+	delete(rectangleVertexArray);
+	delete(rectangleVertexBuffer);
+	delete(rectangleIndexBuffer);
+	delete(rectangleShader);
+	
 	SDL_GL_DestroyContext(glContext);
 	SDL_DestroyWindow(window);
 }
@@ -144,13 +141,27 @@ static void UpdateRectangleColor()
 {
 	constexpr float speed = 0.005f;
 
-	red += speed * increaseRed - speed * !increaseRed;
-	green += speed * increaseGreen - speed * !increaseGreen;
-	blue += speed * increaseBlue - speed * !increaseBlue;
+	rectangleColor += Vector4(speed * increaseRed - speed * !increaseRed, speed * increaseGreen - speed * !increaseGreen, speed * increaseBlue - speed * !increaseBlue, 0.0f);
 
-	if (red > 1.0f || red < 0.0f) increaseRed = !increaseRed;
-	if (green > 1.0f || green < 0.0f) increaseGreen = !increaseGreen;
-	if (blue > 1.0f || blue < 0.0f) increaseBlue = !increaseBlue;
+	if (rectangleColor.x > 1.0f || rectangleColor.x < 0.0f) increaseRed = !increaseRed;
+	if (rectangleColor.y > 1.0f || rectangleColor.y < 0.0f) increaseGreen = !increaseGreen;
+	if (rectangleColor.z > 1.0f || rectangleColor.z < 0.0f) increaseBlue = !increaseBlue;
+}
+
+static void Draw(const VertexArray* vertexArray, const IndexBuffer* indexBuffer, const Shader* shader)
+{
+	/* Bind shader, vertex array and index buffer */
+	shader->Bind();
+	vertexArray->Bind();
+	indexBuffer->Bind();
+
+	/* Draw to back buffer */
+	GL_CALL(glDrawElements(GL_TRIANGLES, indexBuffer->GetCount(), GL_UNSIGNED_INT, nullptr));
+
+	/* Unbind shader, vertex array and index buffer (Only in debug) */
+	shader->Unbind();
+	vertexArray->Unbind();
+	indexBuffer->Unbind();
 }
 
 void Renderer::RenderFrame()
@@ -161,16 +172,10 @@ void Renderer::RenderFrame()
 	GL_CALL(glViewport(0, 0, screenWidth, screenHeight));
 	GL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 
-	/* Bind shader and update color uniform */
-	shader->Bind();
-	shader->SetUniformVector4("u_Color", Vector4(red, green, blue, 1.0f));
+	rectangleShader->Bind();
+	rectangleShader->SetUniformVector4("u_Color", rectangleColor);
 
-	/* Bind vertex array object and index buffer */
-	vertexArray->Bind();
-	indexBuffer->Bind();
-
-	/* Draw to back buffer */
-	GL_CALL(glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr));
+	Draw(rectangleVertexArray, rectangleIndexBuffer, rectangleShader);
 
 	/* Swaps the front and back buffers, which renders the new frame */
 	bool swapWindowResult = SDL_GL_SwapWindow(window);

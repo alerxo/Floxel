@@ -42,5 +42,7 @@ void VertexArray::Bind() const
 
 void VertexArray::Unbind() const
 {
+#ifdef DEBUG
 	GL_CALL(glBindVertexArray(0));
+#endif // DEBUG
 }

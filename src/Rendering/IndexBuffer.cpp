@@ -23,5 +23,7 @@ void IndexBuffer::Bind() const
 
 void IndexBuffer::Unbind() const
 {
+#ifdef DEBUG
 	GL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+#endif // DEBUG
 }

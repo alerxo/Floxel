@@ -7,13 +7,13 @@
 class Shader
 {
 private:
-	Assets::TextAsset vertexShaderAsset;
-	Assets::TextAsset fragmentShaderAsset;
+	const Assets::TextAsset* vertexShaderAsset;
+	const Assets::TextAsset* fragmentShaderAsset;
 	unsigned int rendererID;
 	std::unordered_map<std::string, int> uniformLocationCache;
 
 public:
-	Shader(Assets::TextAsset, Assets::TextAsset);
+	Shader(const Assets::TextAsset*, const Assets::TextAsset*);
 	~Shader();
 
 	void Bind() const;

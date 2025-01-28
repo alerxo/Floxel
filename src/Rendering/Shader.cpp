@@ -73,9 +73,9 @@ static unsigned int CreateShader(const std::string &vertexShaderSource, const st
     return program;
 }
 
-Shader::Shader(Assets::TextAsset vertexShader, Assets::TextAsset fragmentShader) : vertexShaderAsset(vertexShader), fragmentShaderAsset(fragmentShader), rendererID(0)
+Shader::Shader(const Assets::TextAsset* vertexShader, const Assets::TextAsset* fragmentShader) : vertexShaderAsset(vertexShader), fragmentShaderAsset(fragmentShader), rendererID(0)
 {
-    rendererID = CreateShader(vertexShader.text, fragmentShader.text);
+    rendererID = CreateShader(vertexShader->text, fragmentShader->text);
 }
 
 Shader::~Shader()
@@ -90,7 +90,9 @@ void Shader::Bind() const
 
 void Shader::Unbind() const
 {
+#ifdef DEBUG
     GL_CALL(glUseProgram(0));
+#endif // DEBUG
 }
 
 int Shader::GetUniformLocation(std::string name)
