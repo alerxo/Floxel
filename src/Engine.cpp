@@ -1,6 +1,6 @@
 #include "Engine.h"
 
-#include "Renderer.h"
+#include "Rendering/Renderer.h"
 #include "EventHandler.h"
 #include "Debug.h"
 #include <SDL3/SDL.h>

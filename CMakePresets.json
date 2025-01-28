@@ -22,7 +22,7 @@
             },
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_CXX_FLAGS": "-DDEBUG"
+                "CMAKE_CXX_FLAGS": "-Wall -DDEBUG"
             }
         },
         {
@@ -31,7 +31,7 @@
             "inherits": "base",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_CXX_FLAGS": "-mwindows"
+                "CMAKE_CXX_FLAGS": "-Wall -mwindows"
             },
             "architecture": {
                 "value": "x64"

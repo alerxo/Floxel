@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(Floxel)
 
 set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Output path
 set(ARCHITECTURE 32)
@@ -14,7 +15,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/build/${CMAKE_SYSTEM_NAME
 
 # Including headers and setting source files
 include_directories(include dependencies/glad/include dependencies/Assets/include)
-file(GLOB SOURCES src/*.cpp)
+file(GLOB_RECURSE SOURCES src/*.cpp)
 
 # Adding directories to dependency makefiles
 add_subdirectory(dependencies/SDL EXCLUDE_FROM_ALL)
