@@ -1,10 +1,5 @@
 # CMake
 build/
 
-# Asset Packer
-dependencies/Assets/AssetPacker/build/
-dependencies/Assets/include/
-dependencies/Assets/src/
-
 #Visual Studio Code
 .vscode/

@@ -6,13 +6,10 @@
 #include <unordered_map>
 
 constexpr const char *targetResourceDirectory = "resources/";
-constexpr const char *headerResource = "dependencies/Assets/AssetPacker/resources/header.txt";
 constexpr const char *sourceResource1 = "dependencies/Assets/AssetPacker/resources/source1.txt";
 constexpr const char *sourceResource2 = "dependencies/Assets/AssetPacker/resources/source2.txt";
-constexpr const char *headerDirectory = "dependencies/Assets/include/";
-constexpr const char *sourceDirectory = "dependencies/Assets/src/";
-constexpr const char *headerPath = "dependencies/Assets/include/Assets.h";
-constexpr const char *sourcePath = "dependencies/Assets/src/Assets.cpp";
+constexpr const char *sourceDirectory = "build/_intermediate/AssetPacker/src/";
+constexpr const char *sourcePath = "build/_intermediate/AssetPacker/src/Assets.cpp";
 
 enum class AssetType
 {
@@ -21,13 +18,12 @@ enum class AssetType
 };
 
 std::unordered_map<std::string, const AssetType> assetTypeLists =
-	{
-		{".glsl", AssetType::Text},
+{
+	{".glsl", AssetType::Text},
 };
 
 void CreateDirectories()
 {
-	std::filesystem::create_directories(headerDirectory);
 	std::filesystem::create_directories(sourceDirectory);
 }
 
@@ -122,15 +118,6 @@ void FillTargetWithResource(const char *resource, std::ofstream *target)
 	{
 		*target << line << "\n";
 	}
-}
-
-void CreateHeader()
-{
-	/* Opening target file*/
-	std::ofstream headerFile;
-	OpenFile(headerPath, &headerFile);
-	FillTargetWithResource(headerResource, &headerFile);
-	headerFile.close();
 }
 
 AssetType GetType(std::string filePath)
@@ -229,7 +216,6 @@ void CreateSource()
 int main()
 {
 	CreateDirectories();
-	CreateHeader();
 	CreateSource();
 
 	return 0;
