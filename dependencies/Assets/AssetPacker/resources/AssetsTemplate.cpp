@@ -2,3 +2,5 @@
 
 std::unordered_map<std::string, const Assets::TextAsset> Assets::textAssets =
 {
+//Text
+};

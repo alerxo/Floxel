@@ -6,8 +6,7 @@
 #include <unordered_map>
 
 constexpr const char *targetResourceDirectory = "resources/";
-constexpr const char *sourceResource1 = "dependencies/Assets/AssetPacker/resources/source1.txt";
-constexpr const char *sourceResource2 = "dependencies/Assets/AssetPacker/resources/source2.txt";
+constexpr const char *templateFile = "dependencies/Assets/AssetPacker/resources/AssetsTemplate.cpp";
 constexpr const char *sourceDirectory = "build/_intermediate/AssetPacker/src/";
 constexpr const char *sourcePath = "build/_intermediate/AssetPacker/src/Assets.cpp";
 
@@ -15,13 +14,16 @@ enum class AssetType
 {
 	Binary = 0,
 	Text,
+	Image,
 };
 
 std::unordered_map<std::string, const AssetType> assetTypeLists =
 {
 	{".glsl", AssetType::Text},
+	{".png", AssetType::Image}
 };
 
+/* Directories*/
 void CreateDirectories()
 {
 	std::filesystem::create_directories(sourceDirectory);
@@ -56,6 +58,21 @@ const std::vector<std::string> GetFilePaths()
 	}
 
 	return filePaths;
+}
+
+/* String util*/
+void ReplaceSubString(std::string &target, const std::string from, const std::string to)
+{
+	const size_t start = target.find(from);
+
+	if (start == std::string::npos)
+	{
+		std::cerr << "\nfailed replacing string: (target) " << target << ", (from) " << from << std::endl;
+
+		return;
+	}
+
+	target.replace(start, from.length(), to);
 }
 
 void EraseSubString(std::string &target, const std::string from)
@@ -93,30 +110,16 @@ const std::string GetMethodName(const std::string filePath)
 	return result;
 }
 
-void OpenFile(const char *path, std::ofstream *target)
+/* Definition */
+void LoadTemplate(std::string *target)
 {
-	target->open(path, std::fstream::out);
-
-	if (target->is_open())
-	{
-		target->clear();
-	}
-
-	else
-	{
-		std::cerr << "\nfailed opening target file: " << path << std::endl;
-	}
-}
-
-void FillTargetWithResource(const char *resource, std::ofstream *target)
-{
-	/* Reading each line of resource file and putting it in the target file*/
-	std::ifstream in(resource);
+	/* Reading each line of template and putting it in the target file*/
+	std::ifstream in(templateFile);
 	std::string line;
 
 	while (std::getline(in, line))
 	{
-		*target << line << "\n";
+		*target += (line + "\n");
 	}
 }
 
@@ -166,9 +169,11 @@ void LoadBinaryFiles(std::ofstream *target, const std::vector<std::string> fileP
 	std::cout << "\n";
 }
 
-void LoadTextFiles(std::ofstream *target, const std::vector<std::string> filePaths)
+void LoadTextFiles(std::string& target, const std::vector<std::string> filePaths)
 {
 	std::cout << "\n";
+	std::string textFiles;
+
 	for (auto filePath = filePaths.begin(); filePath != filePaths.end(); ++filePath)
 	{
 		const std::string name = GetMethodName(*filePath);
@@ -181,7 +186,7 @@ void LoadTextFiles(std::ofstream *target, const std::vector<std::string> filePat
 		std::cout << "Packing " << name << "\n";
 
 		/* The start of the line*/
-		*target << "    {\"" << name << "\", {\"" << name << "\", \"";
+		textFiles += "    {\"" + name + "\", {\"" + name + "\", \"";
 
 		/* Reading each line of file and putting it in the target file*/
 		std::ifstream in(*filePath);
@@ -189,34 +194,52 @@ void LoadTextFiles(std::ofstream *target, const std::vector<std::string> filePat
 
 		while (std::getline(in, line))
 		{
-			*target << line << "\\n";
+			textFiles += line + "\\n";
 		}
 
 		/* The end of the line */
-		*target << "\"}},\n";
+		textFiles += filePath + 1 != filePaths.end() ? "\"}},\n" : "\"}}";
 	}
 
+	ReplaceSubString(target, "//Text", textFiles);
 	std::cout << "\n";
 }
 
-void CreateSource()
+/* Create definition file */
+void CreateDefinition(const std::string& source)
 {
-	/* Opening target file*/
 	std::ofstream sourceFile;
-	OpenFile(sourcePath, &sourceFile);
-	FillTargetWithResource(sourceResource1, &sourceFile);
+	sourceFile.open(sourcePath, std::fstream::out);
+
+	if (sourceFile.is_open())
+	{
+		sourceFile.clear();
+	}
+
+	else
+	{
+		std::cerr << "\nfailed opening target file: " << templateFile << std::endl;
+	}
+
+	sourceFile << source;
+	sourceFile.close();
+}
+
+void CreateSourceFile()
+{
+	std::string source;
+	LoadTemplate(&source);
 
 	const std::vector<std::string> filePaths = GetFilePaths();
-	LoadTextFiles(&sourceFile, filePaths);
+	LoadTextFiles(source, filePaths);
 
-	FillTargetWithResource(sourceResource2, &sourceFile);
-	sourceFile.close();
+	CreateDefinition(source);
 }
 
 int main()
 {
 	CreateDirectories();
-	CreateSource();
+	CreateSourceFile();
 
 	return 0;
 }
