@@ -20,4 +20,5 @@ public:
 	void Unbind() const;
 	int GetUniformLocation(std::string);
 	void SetUniformVector4(std::string, Vector4);
+	void SetUniformInt(std::string, int);
 };

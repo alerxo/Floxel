@@ -11,3 +11,12 @@ const Assets::TextAsset* Resources::LoadTextAsset(const std::string &filePath)
 
     return &Assets::textAssets[filePath];
 }
+
+const Assets::ImageAsset* Resources::LoadImageAsset(const std::string &filePath)
+{
+#ifdef DEBUG
+    ASSERT(Assets::imageAssets.contains(filePath), true, std::format("Missing resource, {}", filePath));
+#endif // DEBUG
+
+    return &Assets::imageAssets[filePath];
+}

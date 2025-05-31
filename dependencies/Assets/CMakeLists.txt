@@ -22,7 +22,7 @@ add_library(${PROJECT_NAME} STATIC ${SOURCE})
 # Adding dependency on generating build files
 add_custom_command(
   OUTPUT ${NINJA}
-  COMMAND cmake cmake -B${CMAKE_SOURCE_DIR}/build/_intermediate/AssetPacker/build -S${CMAKE_SOURCE_DIR}/dependencies/Assets/AssetPacker
+  COMMAND cmake cmake -B${CMAKE_SOURCE_DIR}/build/_intermediate/AssetPacker/build -S${CMAKE_SOURCE_DIR}/dependencies/Assets/AssetPacker --preset base
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
   DEPENDS ${CMAKE_SOURCE_DIR}/dependencies/Assets/AssetPacker/src/AssetPacker.cpp
 )

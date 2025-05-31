@@ -4,3 +4,8 @@ std::unordered_map<std::string, const Assets::TextAsset> Assets::textAssets =
 {
 //Text
 };
+
+std::unordered_map<std::string, const Assets::ImageAsset> Assets::imageAssets = 
+{
+//Image
+};

@@ -122,3 +122,7 @@ void Shader::SetUniformVector4(std::string name, Vector4 vector4)
 {
     GL_CALL(glUniform4f(GetUniformLocation(name), vector4.w, vector4.x, vector4.y, vector4.z))
 }
+void Shader::SetUniformInt(std::string name, int value)
+{
+    GL_CALL(glUniform1i(GetUniformLocation(name), value));
+}

@@ -4,6 +4,7 @@
 #include "Rendering/Shader.h"
 #include "Rendering/VertexArray.h"
 #include "Rendering/VertexBuffer.h"
+#include "Rendering/Texture.h"
 #include "Resources.h"
 
 #include <SDL3/SDL_video.h>
@@ -18,6 +19,7 @@ VertexBuffer* rectangleVertexBuffer;
 VertexBufferLayout* rectangleVertexBufferLayout;
 IndexBuffer* rectangleIndexBuffer;
 Shader* rectangleShader;
+Texture* texture;
 Vector4 rectangleColor(0.0f, 0.5f, 1.0f, 1.0f);
 
 bool increaseRed, increaseGreen, increaseBlue;
@@ -74,10 +76,10 @@ static void CreateGLData()
 	/* Vertex positions (x, y) */
 	float positions[] =
 	{
-		-0.5f, -0.5f,
-		0.5f, -0.5f,
-		0.5f, 0.5f,
-		-0.5, 0.5f
+		-0.5f, -0.5f, 0.0f, 0.0f,
+		0.5f, -0.5f, 1.0f, 0.0f,
+		0.5f, 0.5f, 1.0f, 1.0f,
+		-0.5, 0.5f, 0.0f, 1.0f,
 	};
 
 	/* Vertex indices */
@@ -86,6 +88,10 @@ static void CreateGLData()
 		0, 1, 2,
 		2, 3, 0
 	};
+
+	/* Enable blending */
+	GL_CALL(glEnable(GL_BLEND));
+	GL_CALL(glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA));
 
 	/* 
 	Creating vertex array buffer, 
@@ -96,9 +102,10 @@ static void CreateGLData()
 	*/
 
 	rectangleVertexArray = new VertexArray();
-	rectangleVertexBuffer = new VertexBuffer(positions, 4 * 2 * sizeof(float));
+	rectangleVertexBuffer = new VertexBuffer(positions, 4 * 4 * sizeof(float));
 
 	rectangleVertexBufferLayout = new VertexBufferLayout();
+	rectangleVertexBufferLayout->Push(GL_FLOAT, 2, GL_FALSE);
 	rectangleVertexBufferLayout->Push(GL_FLOAT, 2, GL_FALSE);
 	rectangleVertexArray->AddBuffer(*rectangleVertexBuffer, *rectangleVertexBufferLayout);
 
@@ -110,6 +117,12 @@ static void CreateGLData()
 	rectangleShader = new Shader(vertexShader, fragmentShader);
 	rectangleShader->Bind();
 	rectangleShader->SetUniformVector4("u_Color", rectangleColor);
+
+	/* Texture */
+	const Assets::ImageAsset* image = Resources::LoadImageAsset("textures/toadhill_games_logo.bmp");
+	texture = new Texture(image);
+	texture->Bind(0);
+	rectangleShader->SetUniformInt("u_Texture", 0);
 
 	/* Unbinds vertex array object, vertex buffer, index buffer and shader (only in debug) */
 	rectangleVertexArray->Unbind();
@@ -157,7 +170,7 @@ static void Draw(const VertexArray* vertexArray, const IndexBuffer* indexBuffer,
 
 	/* Draw to back buffer */
 	GL_CALL(glDrawElements(GL_TRIANGLES, indexBuffer->GetCount(), GL_UNSIGNED_INT, nullptr));
-
+	
 	/* Unbind shader, vertex array and index buffer (Only in debug) */
 	shader->Unbind();
 	vertexArray->Unbind();

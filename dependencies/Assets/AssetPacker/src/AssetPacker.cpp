@@ -3,6 +3,8 @@
 #include <sstream>
 #include <vector>
 #include <filesystem>
+#include <format>
+#include <sstream>
 #include <unordered_map>
 
 constexpr const char *targetResourceDirectory = "resources/";
@@ -14,16 +16,14 @@ enum class AssetType
 {
 	Binary = 0,
 	Text,
-	Image,
+	BMP,
 };
 
-std::unordered_map<std::string, const AssetType> assetTypeLists =
-{
+std::unordered_map<std::string, const AssetType> assetTypeLists = {
 	{".glsl", AssetType::Text},
-	{".png", AssetType::Image}
-};
+	{".bmp", AssetType::BMP}};
 
-/* Directories*/
+/* Directories */
 void CreateDirectories()
 {
 	std::filesystem::create_directories(sourceDirectory);
@@ -60,7 +60,7 @@ const std::vector<std::string> GetFilePaths()
 	return filePaths;
 }
 
-/* String util*/
+/* String util */
 void ReplaceSubString(std::string &target, const std::string from, const std::string to)
 {
 	const size_t start = target.find(from);
@@ -123,7 +123,7 @@ void LoadTemplate(std::string *target)
 	}
 }
 
-AssetType GetType(std::string filePath)
+const AssetType GetType(std::string filePath)
 {
 	std::size_t found = filePath.find(".");
 	filePath.erase(0, found);
@@ -138,75 +138,150 @@ AssetType GetType(std::string filePath)
 	return assetTypeLists[filePath];
 }
 
-void LoadBinaryFiles(std::ofstream *target, const std::vector<std::string> filePaths)
+const bool CheckType(const std::string &name, const AssetType type)
 {
-	std::cout << "\n";
-	for (auto filePath = filePaths.begin(); filePath != filePaths.end(); ++filePath)
+	if (GetType(name) != type)
 	{
-		const std::string name = GetMethodName(*filePath);
-		std::cout << "Packing " << name << "\n";
-		*target << "    {\"" << name << "\", {";
-
-		std::ifstream inputFile(*filePath, std::ios_base::binary);
-
-		inputFile.seekg(0, std::ios_base::end);
-		auto length = inputFile.tellg();
-		inputFile.seekg(0, std::ios_base::beg);
-
-		std::vector<unsigned char> buffer(length);
-		inputFile.read(reinterpret_cast<char *>(buffer.data()), length);
-		inputFile.close();
-
-		for (size_t i = 0; i < buffer.size() - 1; i++)
-		{
-			*target << "0x" << std::hex << (int)buffer.at(i);
-			*target << ", ";
-		}
-
-		*target << "0x" << std::hex << (int)buffer.at(buffer.size() - 1) << "}},\n";
+		return false;
 	}
 
-	std::cout << "\n";
+	std::cout << "[AssetPacker] Packing " << name << "\n";
+
+	return true;
 }
 
-void LoadTextFiles(std::string& target, const std::vector<std::string> filePaths)
+void LoadTextFiles(std::string &target, const std::vector<std::string> filePaths)
 {
-	std::cout << "\n";
-	std::string textFiles;
+	std::string result;
 
 	for (auto filePath = filePaths.begin(); filePath != filePaths.end(); ++filePath)
 	{
 		const std::string name = GetMethodName(*filePath);
 
-		if (GetType(name) != AssetType::Text)
+		if (!CheckType(name, AssetType::Text))
 		{
 			continue;
 		}
 
-		std::cout << "Packing " << name << "\n";
+		/* The map key */
+		result += "    {\"" + name + "\", ";
 
-		/* The start of the line*/
-		textFiles += "    {\"" + name + "\", {\"" + name + "\", \"";
+		/* TextAsset::name */
+		result += "{\"" + name + "\",";
 
-		/* Reading each line of file and putting it in the target file*/
-		std::ifstream in(*filePath);
+		/* TextAsset::text */
+		result += " \"";
+
+		/* Reading each line of file and adding it to result */
+		std::ifstream stream(*filePath);
 		std::string line;
 
-		while (std::getline(in, line))
+		while (std::getline(stream, line))
 		{
-			textFiles += line + "\\n";
+			result += line + "\\n";
 		}
 
-		/* The end of the line */
-		textFiles += filePath + 1 != filePaths.end() ? "\"}},\n" : "\"}}";
+		result += "\"";
+
+		/* Brackets */
+		result += "}},\n";
 	}
 
-	ReplaceSubString(target, "//Text", textFiles);
-	std::cout << "\n";
+	ReplaceSubString(target, "//Text", result);
+}
+
+void LoadImageFiles(std::string &target, const std::vector<std::string> filePaths)
+{
+	std::stringstream result;
+
+	for (auto filePath = filePaths.begin(); filePath != filePaths.end(); ++filePath)
+	{
+		const std::string name = GetMethodName(*filePath);
+
+		if (!CheckType(name, AssetType::BMP))
+		{
+			continue;
+		}
+
+		/* Read file and store bytes in buffer */
+		std::ifstream stream(*filePath, std::ios_base::binary);
+
+		stream.seekg(0, std::ios_base::end);
+		auto length = stream.tellg();
+		stream.seekg(0, std::ios_base::beg);
+
+		std::vector<unsigned char> buffer(length);
+		stream.read(reinterpret_cast<char *>(buffer.data()), length);
+		stream.close();
+
+		size_t i = 0;
+
+		/* The map key */
+		result << "    {\"" << name << "\", ";
+
+		/* ImageAsset::name */
+		result << "{\"" << name << "\",";
+
+		/* Skip header */
+		i += 14;
+
+		/* Skip infoheader size */
+		i += 4;
+
+		unsigned int width = *(unsigned int *)&buffer[i];
+		i += 4;
+
+		unsigned int height = *(unsigned int *)&buffer[i];
+		i += 4;
+
+		/* ImageAsset::width, ImageAsset::height */
+		result << " " << width << ", " << height << ",";
+
+		/* Skip planes*/
+		i += 2;
+
+		unsigned short bitDepth = *(unsigned short *)&buffer[i];
+		i += 2;
+
+		if (bitDepth < 8)
+		{
+			std::cerr << "\nfile: " << name << " has invalid bit depth: " << bitDepth << std::endl;
+		}
+
+		unsigned int compression = *(unsigned int *)&buffer[i];
+		i += 4;
+
+		unsigned int imageSize = *(unsigned int *)&buffer[i];
+		i += 4;
+
+		/* Skip resolution and colors used*/
+		i += 16;
+
+		/* ImageAsset::buffer */
+		result << " {";
+
+		for(int i = 0; i < width * height; i++)
+		{
+			unsigned int red = buffer[i];
+			unsigned int green = buffer[i + 1];
+			unsigned int blue = buffer[i + 2];
+			unsigned int alpha = 255; 
+			i += 4;
+
+			result << red << ", " <<  green << ", " <<  blue << ", " << alpha << ", ";
+		}
+
+		result << "}";
+
+		/* Brackets */
+		result << "}},\n";
+	}
+
+	ReplaceSubString(target, "//Image", result.str());
 }
 
 /* Create definition file */
-void CreateDefinition(const std::string& source)
+void CreateDefinition(const std::string &source)
 {
 	std::ofstream sourceFile;
 	sourceFile.open(sourcePath, std::fstream::out);
@@ -232,6 +307,7 @@ void CreateSourceFile()
 
 	const std::vector<std::string> filePaths = GetFilePaths();
 	LoadTextFiles(source, filePaths);
+	LoadImageFiles(source, filePaths);
 
 	CreateDefinition(source);
 }
