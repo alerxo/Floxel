@@ -6,6 +6,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Setting source file
+include_directories(include)
 file(GLOB SOURCES src/*.cpp)
 
 # Creating executeable

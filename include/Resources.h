@@ -7,4 +7,5 @@ namespace Resources
 {
 	const Assets::TextAsset* LoadTextAsset(const std::string &);
 	const Assets::ImageAsset* LoadImageAsset(const std::string &);
+	const Assets::ImageAsset* LoadPNGAsset(const std::string &);
 }

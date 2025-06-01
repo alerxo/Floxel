@@ -8,7 +8,7 @@ private:
     const Assets::ImageAsset* imageAsset;
     unsigned int rendererID;
     unsigned char* localBuffer;
-    int width, height, bitsPerPixel;
+    int width, height;
 
 public:
     Texture(const Assets::ImageAsset*);

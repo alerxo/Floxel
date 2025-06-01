@@ -119,7 +119,7 @@ static void CreateGLData()
 	rectangleShader->SetUniformVector4("u_Color", rectangleColor);
 
 	/* Texture */
-	const Assets::ImageAsset* image = Resources::LoadImageAsset("textures/toadhill_games_logo.bmp");
+	const Assets::ImageAsset* image = Resources::LoadImageAsset("textures/toadhill.png");
 	texture = new Texture(image);
 	texture->Bind(0);
 	rectangleShader->SetUniformInt("u_Texture", 0);

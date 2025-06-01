@@ -7,6 +7,8 @@
 #include <sstream>
 #include <unordered_map>
 
+#include "stb_image.h"
+
 constexpr const char *targetResourceDirectory = "resources/";
 constexpr const char *templateFile = "dependencies/Assets/AssetPacker/resources/AssetsTemplate.cpp";
 constexpr const char *sourceDirectory = "build/_intermediate/AssetPacker/src/";
@@ -17,11 +19,12 @@ enum class AssetType
 	Binary = 0,
 	Text,
 	BMP,
+	PNG,
 };
 
 std::unordered_map<std::string, const AssetType> assetTypeLists = {
 	{".glsl", AssetType::Text},
-	{".bmp", AssetType::BMP}};
+	{".png", AssetType::PNG}};
 
 /* Directories */
 void CreateDirectories()
@@ -152,7 +155,7 @@ const bool CheckType(const std::string &name, const AssetType type)
 
 void LoadTextFiles(std::string &target, const std::vector<std::string> filePaths)
 {
-	std::string result;
+	std::stringstream result;
 
 	for (auto filePath = filePaths.begin(); filePath != filePaths.end(); ++filePath)
 	{
@@ -164,13 +167,13 @@ void LoadTextFiles(std::string &target, const std::vector<std::string> filePaths
 		}
 
 		/* The map key */
-		result += "    {\"" + name + "\", ";
+		result << "    {\"" + name + "\", ";
 
 		/* TextAsset::name */
-		result += "{\"" + name + "\",";
+		result << "{\"" + name + "\",";
 
 		/* TextAsset::text */
-		result += " \"";
+		result << " \"";
 
 		/* Reading each line of file and adding it to result */
 		std::ifstream stream(*filePath);
@@ -178,16 +181,16 @@ void LoadTextFiles(std::string &target, const std::vector<std::string> filePaths
 
 		while (std::getline(stream, line))
 		{
-			result += line + "\\n";
+			result << line + "\\n";
 		}
 
-		result += "\"";
+		result << "\"";
 
 		/* Brackets */
-		result += "}},\n";
+		result << "}},\n";
 	}
 
-	ReplaceSubString(target, "//Text", result);
+	ReplaceSubString(target, "//Text", result.str());
 }
 
 void LoadImageFiles(std::string &target, const std::vector<std::string> filePaths)
@@ -198,23 +201,17 @@ void LoadImageFiles(std::string &target, const std::vector<std::string> filePath
 	{
 		const std::string name = GetMethodName(*filePath);
 
-		if (!CheckType(name, AssetType::BMP))
+		if (!CheckType(name, AssetType::PNG))
 		{
 			continue;
 		}
 
-		/* Read file and store bytes in buffer */
-		std::ifstream stream(*filePath, std::ios_base::binary);
+		int width = 0;
+		int height = 0;
+		int bpp = 0;
 
-		stream.seekg(0, std::ios_base::end);
-		auto length = stream.tellg();
-		stream.seekg(0, std::ios_base::beg);
-
-		std::vector<unsigned char> buffer(length);
-		stream.read(reinterpret_cast<char *>(buffer.data()), length);
-		stream.close();
-
-		size_t i = 0;
+		stbi_set_flip_vertically_on_load(1);
+		unsigned char *buffer = stbi_load(filePath->c_str(), &width, &height, &bpp, 4);
 
 		/* The map key */
 		result << "    {\"" << name << "\", ";
@@ -222,53 +219,15 @@ void LoadImageFiles(std::string &target, const std::vector<std::string> filePath
 		/* ImageAsset::name */
 		result << "{\"" << name << "\",";
 
-		/* Skip header */
-		i += 14;
-
-		/* Skip infoheader size */
-		i += 4;
-
-		unsigned int width = *(unsigned int *)&buffer[i];
-		i += 4;
-
-		unsigned int height = *(unsigned int *)&buffer[i];
-		i += 4;
-
 		/* ImageAsset::width, ImageAsset::height */
-		result << " " << width << ", " << height << ",";
-
-		/* Skip planes*/
-		i += 2;
-
-		unsigned short bitDepth = *(unsigned short *)&buffer[i];
-		i += 2;
-
-		if (bitDepth < 8)
-		{
-			std::cerr << "\nfile: " << name << " has invalid bit depth: " << bitDepth << std::endl;
-		}
-
-		unsigned int compression = *(unsigned int *)&buffer[i];
-		i += 4;
-
-		unsigned int imageSize = *(unsigned int *)&buffer[i];
-		i += 4;
-
-		/* Skip resolution and colors used*/
-		i += 16;
+		result << " " << width << ", " << height << ", ";
 
 		/* ImageAsset::buffer */
 		result << " {";
 
-		for(int i = 0; i < width * height; i++)
+		for (int i = 0; i < height * width * 4; i++)
 		{
-			unsigned int red = buffer[i];
-			unsigned int green = buffer[i + 1];
-			unsigned int blue = buffer[i + 2];
-			unsigned int alpha = 255; 
-			i += 4;
-
-			result << red << ", " <<  green << ", " <<  blue << ", " << alpha << ", ";
+			result << (unsigned int)buffer[i] << ", ";
 		}
 
 		result << "}";
