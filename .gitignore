@@ -1,6 +1,12 @@
 # CMake
 build/
 
-#Visual Studio Code
+# Visual Studio Code
 .vscode/
+
+# Visual Studio
 .vs/
+Floxel.sln
+Floxel.vcxproj
+Floxel.vcxproj.filters
+Floxel.vcxproj.user
